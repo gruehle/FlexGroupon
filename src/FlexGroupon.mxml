@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+               xmlns:s="library://ns.adobe.com/flex/spark"
+               initialize="initializeHandler(event)"
+			   applicationDPI="160"
+			   resize="resizeHandler(event)"
+			   splashScreenImage="FlouponSplashScreen">
+ 	<fx:Style source="assets/styles.css"/>
+    
+    <!-- TODO:
+        - Skin for calloutButton on Android
+        - Add multi-dpi splash screen
+    -->
+    <fx:Script>
+        <![CDATA[           
+            import flash.profiler.showRedrawRegions;
+            
+            import models.Groupon;
+            
+            import mx.events.ResizeEvent;
+            
+            import utils.DeviceInfo;
+            
+            import valueObjects.Deal;
+            
+            import views.DetailView;
+             
+            private function initializeHandler(event:Event):void
+            {
+				// Add event handlers for the Back button. This is necessary because we're not using ViewNavigatorApplication
+				// (which does this automatically)--we're using a plain Spark Application and hooking up our own
+				// ViewNavigator.
+                systemManager.stage.addEventListener(KeyboardEvent.KEY_DOWN, deviceKeyDownHandler);
+                systemManager.stage.addEventListener(KeyboardEvent.KEY_UP, deviceKeyUpHandler);
+                
+                // Initialize our Groupon model/service, and add a handlers for the deal events.
+                Groupon.getInstance().initialize();
+                Groupon.getInstance().addEventListener(Groupon.DEALS_LOADED, dealsLoadedHandler);
+                Groupon.getInstance().addEventListener(Groupon.DEAL_SELECTED, dealSelectedHandler);
+            }
+            
+			private function resizeHandler(event:ResizeEvent):void
+            {
+                // When the app resizes, set the current state based on the aspect ratio
+                // and form factor.
+                currentState = aspectRatio + (DeviceInfo.isTablet ? "Tablet" : "Phone");
+			}
+            
+            private function deviceKeyDownHandler(event:KeyboardEvent):void
+            {
+                var key:uint = event.keyCode;
+                
+                // The default behavior for the back key (when it's not being handled by
+				// ViewNavigatorApplication) is to jump out of the app to the OS home screen.
+				// In our case, if we have a view to pop back to on the navigator stack, we
+				// don't want this default behavior.
+                if (key == Keyboard.BACK && phoneNavigator && phoneNavigator.length > 1)
+                     event.preventDefault();
+            }
+            
+            private function deviceKeyUpHandler(event:KeyboardEvent):void
+            {
+                var key:uint = event.keyCode;
+                
+                if (key == Keyboard.BACK && phoneNavigator && phoneNavigator.length > 1)
+                    phoneNavigator.popView();
+            }
+            
+            private function dealsLoadedHandler(event:Event):void
+            {
+                // On tablet, select the first deal
+                if (DeviceInfo.isTablet)
+                    Groupon.getInstance().selectedDeal = Groupon.getInstance().nearbyDeals.getItemAt(0) as Deal;
+            }
+            
+            private function dealSelectedHandler(event:Event):void
+            {
+                // This function is where app-level functionality occurs when a deal
+                // is selected. The Summary and Detail views also have dealSelected
+                // handlers the take care of the view-specific functionality.                
+                
+                // On the phone, when a deal is selected from the Summary view, push
+                // the DetailView.
+                if (phoneNavigator && phoneNavigator.length == 1)
+                {
+                    var selectedDeal:Deal = Groupon.getInstance().selectedDeal;
+                    
+                    if (selectedDeal)
+                        phoneNavigator.pushView(views.DetailView, selectedDeal);
+                }
+                
+                // Hide the master callout, if visible
+                if (splitNavigator)
+                    splitNavigator.hideViewNavigatorPopUp();
+            }
+ 		]]>
+    </fx:Script>
+    <s:states>
+        <s:State name="landscapeTablet" stateGroups="landscape, tablet" />
+        <s:State name="portraitTablet" stateGroups="portrait, tablet" />
+        <s:State name="portraitPhone" stateGroups="portrait, phone" />
+        <s:State name="landscapePhone" stateGroups="landscape, phone" />
+    </s:states>
+
+    <!-- For tablet form factor, use a SplitViewNavigator -->
+    <s:SplitViewNavigator id="splitNavigator" includeIn="tablet" left="0" right="0" top="0" bottom="0" autoHideFirstViewNavigator="true">
+        <s:ViewNavigator width="400" height="100%" firstView="views.SummaryView" />
+        <s:ViewNavigator width="100%" height="100%" firstView="views.DetailView">
+            <s:navigationContent.portraitTablet>
+                <s:Button id="calloutButton" label="Nearby Deals" 
+                          click="splitNavigator.showFirstViewNavigatorInPopUp(calloutButton)" /> 
+            </s:navigationContent.portraitTablet>
+        </s:ViewNavigator>
+    </s:SplitViewNavigator>
+    
+    <!-- For phone form factor, use a single ViewNavigator -->
+    <s:ViewNavigator id="phoneNavigator" includeIn="phone" width="100%" height="100%" firstView="views.SummaryView" />
+</s:Application>

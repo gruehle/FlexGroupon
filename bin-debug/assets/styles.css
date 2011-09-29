@@ -1,0 +1,79 @@
+@namespace "library://ns.adobe.com/flex/spark";
+
+IconItemRenderer.summary {
+	messageStyleName: message;
+	verticalGap: 8;
+	downColor: #41a3d7;
+	selectionColor: #41a3d7;
+}
+
+.message {
+	color: #000000;
+}
+
+ActionBar {
+	chromeColor: #89b556;
+}
+
+Callout {
+    contentBackgroundAppearance: none;
+}
+
+Callout ActionBar {
+    chromeColor: #484848;
+}
+
+.detailTitle {
+    fontWeight: bold;
+    fontSize: 20;
+    color: #ffffff;
+}
+
+.detailShadow {
+    fontWeight: bold;
+    fontSize: 20;
+    color: #000000;
+}
+
+.detailBar {
+    fontSize: 12;
+    color: #ffffff;
+}
+
+.detailBarShadow {
+    fontSize: 12;
+    color: #000000;
+}
+
+.noDiscussionsLabel {
+	fontSize: 30;
+	fontWeight: bold;
+	color: #cccccc;
+}
+
+.smallButtonGray {
+	fontSize: 12;
+}
+
+.smallButtonGreen {
+	fontSize: 12;
+	chromeColor: #89b556;
+	color: #ffffff;
+	textShadowColor: #000000;
+}
+
+SplitViewNavigator {
+    skinClass: ClassReference("skins.SplitViewNavigatorSkin")
+}
+
+ActionBar.beveled Group#navigationGroup Button#calloutButton {
+    skinClass: ClassReference("spark.skins.mobile.BeveledActionButtonSkin");
+}
+
+@media (os-platform: "ios") {
+	ActionBar {
+		defaultButtonAppearance: "beveled";
+		titleAlign: "center";
+	}
+}
+

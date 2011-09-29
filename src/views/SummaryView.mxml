@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+        xmlns:s="library://ns.adobe.com/flex/spark" 
+        title="Nearby Deals" 
+        initialize="initializeHandler(event)"
+        viewActivate.phone="viewActivateHandler(event)"
+		destructionPolicy="never">
+    <fx:Script>
+        <![CDATA[            
+            import models.Groupon;
+            
+            import spark.events.ViewNavigatorEvent;
+            
+            import utils.DeviceInfo;
+            
+            import valueObjects.Deal;
+            
+            public function refresh(): void 
+            {
+                // Refresh the model
+                Groupon.getInstance().refresh();
+            }
+             
+            protected function initializeHandler(event:Event):void
+            {
+                // Listen for "dealSelected" events from our model.
+                // When a new deal is selected, we want to make sure
+                // it is selected in our list.
+                Groupon.getInstance().addEventListener(Groupon.DEAL_SELECTED, dealSelectedHandler);
+                
+                // Set our state
+                currentState = DeviceInfo.isTablet ? "tablet" : "phone";
+            }
+            
+            protected function dealSelectedHandler(event:Event):void
+            {
+                var selectedDeal:Deal = Groupon.getInstance().selectedDeal;
+                
+                // Sync our list selection with the model selection
+                if (selectedDeal)
+                {
+                    list.selectedItem = selectedDeal;
+                    if (list.dataGroup.contentHeight)
+                        list.ensureIndexIsVisible(list.dataProvider.getItemIndex(selectedDeal));
+                }
+            }
+            
+            protected function list_changeHandler(event:Event):void
+            {
+                // Notify the model of the new selected deal
+                Groupon.getInstance().selectedDeal = list.selectedItem;
+            }
+            
+            protected function viewActivateHandler(event:ViewNavigatorEvent):void
+            {
+                // On the phone, when this view is activated, clear the selected
+                // deal.
+                list.selectedIndex = -1;
+                Groupon.getInstance().selectedDeal = null;
+            }
+            
+        ]]>
+    </fx:Script>
+    
+    <s:states>
+        <s:State name="phone" />
+        <s:State name="tablet" />
+    </s:states>
+
+    <s:actionContent>
+		<s:Button click="refresh()">
+			<s:icon>
+				<s:MultiDPIBitmapSource
+					source160dpi="@Embed('assets/refresh160.png')"
+					source240dpi="@Embed('assets/refresh240.png')"
+					source320dpi="@Embed('assets/refresh320.png')"/>
+			</s:icon>
+		</s:Button>
+	</s:actionContent>
+    
+    <!-- Main list -->
+    <s:List id="list" left="0" top="0" right="0" bottom="0" 
+            dataProvider="{Groupon.getInstance().nearbyDeals}" 
+            change="list_changeHandler(event)">
+        <s:itemRenderer.tablet>
+            <fx:Component>
+                <s:IconItemRenderer styleName="summary" labelField="" messageField="announcementTitle" 
+                                    iconField="mediumImageUrl" iconWidth="100" iconHeight="61"
+                                    iconPlaceholder="@Embed('assets/placeholder.png')"/>
+            </fx:Component>
+        </s:itemRenderer.tablet>
+        <s:itemRenderer.phone>
+            <fx:Component>
+                <s:IconItemRenderer styleName="summary" labelField="" messageField="announcementTitle" 
+                                    iconField="smallImageUrl" iconWidth="50" iconHeight="30"
+                                    iconPlaceholder="@Embed('assets/placeholder.png')"/>
+            </fx:Component>
+        </s:itemRenderer.phone>
+    </s:List>
+    
+    
+    <!-- Busy indicator -->
+    <s:Group id="busyIndicator" horizontalCenter="0" verticalCenter="0" visible="{list.dataProvider == null}">
+        <s:BusyIndicator horizontalCenter="0" />
+        <s:Label text="Loading Nearby Deals..." top="30" />
+    </s:Group>
+</s:View>

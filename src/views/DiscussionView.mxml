@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+							 xmlns:s="library://ns.adobe.com/flex/spark"
+							 xmlns:grouponservice="services.grouponservice.*"
+							 title="Discussion"
+							 viewActivate="viewActivateHandler()" 
+                             addedToStage="addedToStageHandler()"
+                             initialize="initializeHandler(event)"
+                             xmlns:components="components.*">
+	<fx:Script>
+		<![CDATA[
+            import models.Groupon;
+            
+            import mx.collections.IList;
+            import mx.events.FlexEvent;
+            
+            import spark.components.Button;
+            import spark.effects.Resize;
+            
+            import utils.DeviceInfo;
+            
+			private function viewActivateHandler():void 
+            {
+                loadDiscussions();
+			}
+			
+            private function addedToStageHandler():void
+            {
+                // We only want to load the discussions if the view
+                // is already active. On the first load of the view,
+                // we wait for viewActivate before loading discussions. 
+                if (isActive)
+                    loadDiscussions();
+            }
+            
+            private function loadDiscussions():void
+            {
+				Groupon.getInstance().getSelectedDealDiscussions();
+            }
+            
+			private function handlePostInputBoxExpand():void 
+            {
+				shield.visible = shield.includeInLayout = postInputBox.expanded;
+			}
+            
+            protected function initializeHandler(event:FlexEvent):void
+            {
+                // On iOS phones, add a back button to the navigation content.
+                if (DeviceInfo.isIOS && !DeviceInfo.isTablet)
+                {
+                    var backButton:Button = new Button();
+                    backButton.label = "Deals";
+                    backButton.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {navigator.popView()});
+                    navigationContent = [backButton];
+                }
+            }
+		]]>
+	</fx:Script>
+	
+	<!-- Main discussion list -->
+	<s:List id="discussionList" left="0" top="55" right="0" bottom="0" dataProvider="{Groupon.getInstance().dealDiscussions}">
+		<s:itemRenderer>
+			<fx:Component>
+				<s:IconItemRenderer mouseEnabled="false" mouseChildren="false" 
+									labelField="posterName" messageField="body" iconField="posterAvatar" 
+									iconWidth="50" iconHeight="50" verticalAlign="top"
+									iconPlaceholder="@Embed('assets/placeholder.png')"/>
+			</fx:Component>
+		</s:itemRenderer>
+	</s:List>
+	
+	<!-- Shield when post input box is expanded -->
+	<s:Group left="0" top="0" right="0" bottom="0" cacheAsBitmap="true">
+		<s:Rect id="shield" left="0" top="0" right="0" bottom="0" alpha="0.6" visible="false" includeInLayout="false">
+			<s:fill>
+				<s:SolidColor color="#000000"/>
+			</s:fill>
+		</s:Rect>
+	</s:Group>
+	
+	<!-- Post input box (overlaps list when expanded, so has to be in front) -->
+	<components:PostInputBox id="postInputBox" left="0" top="0" right="0" expand="handlePostInputBoxExpand()"/>
+	
+	<!-- Busy indicator -->
+	<s:Group id="busyIndicator" horizontalCenter="0" verticalCenter="0" visible="{discussionList.dataProvider == null}">
+		<s:BusyIndicator horizontalCenter="0" />
+		<s:Label text="Loading Discussions..." top="30" />
+	</s:Group>
+	
+	<!-- Empty indicator -->
+	<s:Label id="noDiscussionsLabel" text="No Discussions" horizontalCenter="0" verticalCenter="0" styleName="noDiscussionsLabel" 
+			 visible="{discussionList.dataProvider != null &amp;&amp; discussionList.dataProvider.length == 0}" />
+</s:View>

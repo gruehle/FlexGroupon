@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark">
+	<fx:Metadata>
+		[Event(name="expand")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			public function get expanded(): Boolean 
+            {
+				return (currentState == "expanded");
+			}
+			
+			private function postInput_focusInHandler(): void 
+            {
+				expandInputBox(true);
+			}
+			
+			private function postInput_focusOutHandler(): void 
+            {
+				expandInputBox(false);
+			}
+			
+			private function expandInputBox(expand: Boolean): void 
+            {
+				currentState = (expand ? "expanded" : "collapsed");
+				dispatchEvent(new Event("expand"));
+			}
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="collapsed"/>
+		<s:State name="expanded"/>
+	</s:states>
+	<s:transitions>
+		<s:Transition fromState="collapsed" toState="expanded">
+			<s:Sequence>
+				<s:Resize targets="{[this, postInput]}" duration="300"/>
+				<s:AddAction targets="{[postButton, cancelButton]}"/>
+			</s:Sequence>
+		</s:Transition>
+		<s:Transition fromState="expanded" toState="collapsed">
+			<s:Sequence>
+				<s:RemoveAction startDelay="100" targets="{[postButton, cancelButton]}"/>
+				<s:Resize targets="{[this, postInput]}" duration="300"/>
+			</s:Sequence>
+		</s:Transition>
+	</s:transitions>
+	<s:Rect left="0" top="0" right="0" bottom="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="#eeeeee" ratio="0"/>
+				<s:GradientEntry color="#cccccc" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:TextArea editable="true" id="postInput" left="10" top="10" right="10" bottom.collapsed="10" bottom.expanded="50" 
+				height.collapsed="35" height.expanded="100" prompt="Speak your mind..." focusSkin="{null}"
+				focusIn="postInput_focusInHandler()" focusOut="postInput_focusOutHandler()" valueCommit="postInput_focusOutHandler()"/>
+	<s:Button id="postButton" includeIn="expanded" label="Post" right="10" bottom="10" styleName="smallButtonGreen" height="30" minHeight="30"/> 
+	<s:Button id="cancelButton" includeIn="expanded" label="Cancel" right="70" bottom="10" styleName="smallButtonGray" height="30" minHeight="30"/>
+</s:Group>
