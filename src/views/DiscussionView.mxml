@@ -45,18 +45,36 @@
             
             protected function initializeHandler(event:FlexEvent):void
             {
-                // On iOS phones, add a back button to the navigation content.
-                if (DeviceInfo.isIOS && !DeviceInfo.isTablet)
-                {
-                    var backButton:Button = new Button();
-                    backButton.label = "Deals";
-                    backButton.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {navigator.popView()});
-                    navigationContent = [backButton];
-                }
+                // Set the state for the view. Since this view does not have aspect ratio
+                // states, it is best to set the currentState once in the initialize handler.
+                // If this view did have aspectRatio states, the currentState should be
+                // set in a resize handler.
+                if (DeviceInfo.isIOS)
+                    currentState = DeviceInfo.isTablet ? "iosTablet" : "iosPhone";
+                else
+                    currentState = DeviceInfo.isTablet ? "tablet" : "phone";
             }
 		]]>
 	</fx:Script>
 	
+    <!--
+        This view uses states for platform differences. We need to know form factor
+        (tablet/phone) and iOS, so we will set up 4 states. This pattern can 
+        be expanded as needed to handle more platforms and/or aspect ratio.
+    -->
+    <s:states>
+        <s:State name="tablet" />
+        <s:State name="phone" />
+        <s:State name="iosTablet" />
+        <s:State name="iosPhone" />
+    </s:states>
+    
+    <!-- On IOS phones we need a back button. IOS tablet shows the discussion in a 
+         callout, so no back button in required. Android has a hardware back button. -->
+    <s:navigationContent.iosPhone>
+        <s:Button label="Deal" click="navigator.popView()" />
+    </s:navigationContent.iosPhone>
+    
 	<!-- Main discussion list -->
 	<s:List id="discussionList" left="0" top="55" right="0" bottom="0" dataProvider="{Groupon.getInstance().dealDiscussions}">
 		<s:itemRenderer>

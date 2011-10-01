@@ -36,15 +36,24 @@ public class Groupon extends EventDispatcher
         discussionsResult.addEventListener(FaultEvent.FAULT, faultHandler);
     }
     
+    //////////////////////////////////////////////////////////
+    //
     // Public properties
+    //
+    //////////////////////////////////////////////////////////
+
+    
+    // nearbyDeals
     [Bindable]
     public var nearbyDeals:ArrayCollection;
     
+    // dealDiscussions - discussions for the selected deal
     [Bindable]
     public var dealDiscussions:ArrayCollection;
     
     private var _selectedDeal:Deal;
     
+    // selectedDeal
     [Bindable]
     public function get selectedDeal():Deal
     {
@@ -84,12 +93,14 @@ public class Groupon extends EventDispatcher
         initialized = true;
     }
     
+    // Get the discussions for the currently selected deal
     public function getSelectedDealDiscussions():void
     {
         dealDiscussions = null;
         discussionsResult.token = grouponService.getDealDiscussions(selectedDeal.id, Constants.CLIENT_ID);
     }
     
+    // Refresh the nearbyDeals list
     public function refresh():void
     {
         nearbyDeals = null;

@@ -5,7 +5,8 @@
         initialize="initializeHandler(event)"
         viewActivate="viewActivateHandler()"
 		viewDeactivate="viewDeactivateHandler()"
-        creationComplete="creationCompleteHandler(event)">
+        creationComplete="creationCompleteHandler(event)"
+        destructionPolicy="never">
     <fx:Script>
         <![CDATA[          
             import flash.net.navigateToURL;
@@ -31,7 +32,8 @@
             
 			private var _timer: Timer;
 			
-			private function isoToDate(value:String):Date {
+			private function isoToDate(value:String):Date 
+            {
 				var dateStr:String = value;
 				dateStr = dateStr.replace(/\-/g, "/");
 				dateStr = dateStr.replace("T", " ");
@@ -39,14 +41,15 @@
 				return new Date(Date.parse(dateStr));
 			}
 			
-			override public function set data(value: Object): void {
+			override public function set data(value: Object): void 
+            {
 				super.data = value;
-				if (value != null) {
+				if (value != null) 
+                {
 					updateTitle(null);
 					
-					if (_timer != null) {
+					if (_timer != null) 
 						_timer.stop();
-					}
 					
 					_timer = new Timer(getTimeRemaining() < 86400 ? 1000 : 60000);
 					_timer.addEventListener(TimerEvent.TIMER, updateTitle);
@@ -54,17 +57,21 @@
 				}
 			}			
 			
-			private function getTimeRemaining(): int {
+			private function getTimeRemaining(): int 
+            {
 				var endDate: Date = isoToDate(data.endAt);
 				return (endDate.getTime() - new Date().getTime()) / 1000;
 			}
             
-            private function viewActivateHandler():void {
+            private function viewActivateHandler():void 
+            {
                 addEventListener(DetailView.DISCUSSION_CLICKED, discussionClickedHandler);
             }
             
-			private function viewDeactivateHandler(): void {
-				if (_timer != null) {
+			private function viewDeactivateHandler(): void 
+            {
+				if (_timer != null) 
+                {
 					_timer.stop();
 					_timer = null;
 				}
@@ -73,7 +80,8 @@
                 removeEventListener(DetailView.DISCUSSION_CLICKED, discussionClickedHandler);
 			}
 			
-			private function updateTitle(event: TimerEvent): void {
+			private function updateTitle(event: TimerEvent): void 
+            {
 				var timeRemaining: int = getTimeRemaining();
 				var daysLeft: int = timeRemaining / 86400;
 				var hoursLeft: int = (timeRemaining % 86400) / 3600;
@@ -81,25 +89,24 @@
 				var secondsLeft: int = timeRemaining % 60;
 				
 				var result: String = "Ends in: "
-				if (daysLeft == 0) {
+				if (daysLeft == 0) 
 					result += twodigit(hoursLeft) + "h " + twodigit(minutesLeft) + "m " + twodigit(secondsLeft) + "s";
-				}
-				else {
+				else 
 					result += twodigit(daysLeft) + "d " + twodigit(hoursLeft) + "h " + twodigit(minutesLeft) + "m";
-				}
-				title = result;
+
+                title = result;
 			}
 			
-			private function twodigit(value: Number): String {
-				if (value < 10) {
+			private function twodigit(value: Number): String 
+            {
+				if (value < 10)
 					return "0" + value.toString();
-				}
-				else {
+				else 
 					return value.toString();
-				}
 			}
 			
-			private function buyButton_clickHandler(): void {
+			private function buyButton_clickHandler(): void 
+            {
 				if (data != null)
 					navigateToURL(new URLRequest(data.options.option.buyUrl));
 			}
@@ -112,8 +119,10 @@
 			}            
             
             private var lastHScrollPosition:int;
+            
             protected function list_touchInteractionEndHandler(event:TouchInteractionEvent):void
             {
+                // Check to see if the user swiped to a new deal
                 if (list.scroller.viewport.horizontalScrollPosition != lastHScrollPosition)
                 {
                     lastHScrollPosition = list.scroller.viewport.horizontalScrollPosition;
@@ -135,6 +144,9 @@
                 {
                     list.validateNow();
                     var newVisibleIndex:int = list.dataProvider.getItemIndex(data);
+                    
+                    // If this is called early in startup, snapElement can misbehave.
+                    // To avoid that, make sure we have a contentHeight befor calling.
                     if (list.dataGroup.contentHeight)
                         list.scroller.snapElement(newVisibleIndex, false);
                 }
@@ -144,165 +156,50 @@
             {
                 Groupon.getInstance().addEventListener(Groupon.DEAL_SELECTED, dealSelectedHandler);
 
-                // On iOS phones, add a back button to the navigation content.
-                if (DeviceInfo.isIOS && !DeviceInfo.isTablet)
-                {
-                    var backButton:Button = new Button();
-                    backButton.label = "Deals";
-                    backButton.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {navigator.popView()});
-                    navigationContent = [backButton];
-                }
+                // For this view, the only additonal state we have is "needsBackButton". The 
+                // back button is only needed for IOS phones (the discusson view on tablets
+                // doesn't have a back button).
+                currentState = DeviceInfo.isIOS && !DeviceInfo.isTablet ? "needsBackButton" : "normal";
             }
             
             protected function creationCompleteHandler(event:FlexEvent):void
             {
+                // At view startup, make sure the selected deal is snapped into view
                 dealSelectedHandler(null);
             }
             
         ]]>
     </fx:Script>
+    
+    <!-- This view only needs states for setting up the back button on IOS phone.
+    
+         See DiscussionView for an example with generic IOS states along with
+         form factor states.
+    -->
+    <s:states>
+        <s:State name="normal" />
+        <s:State name="needsBackButton" />
+    </s:states>
+    
+    <s:navigationContent.needsBackButton>
+        <s:Button label="Deals" click="navigator.popView()" />
+    </s:navigationContent.needsBackButton>
+    
 	<s:actionContent>
 		<s:Button label="Buy" click="buyButton_clickHandler()"/>
 	</s:actionContent>
+    
+    <!-- The details are shown in a horizontal list with page scrolling enabled.
+         This allows the user to swipe left and right to navigate through deals. -->
     <s:List id="list" width="100%" height="100%" labelField="title"
             pageScrollingEnabled="true" scrollSnappingMode="center" 
             verticalScrollPolicy="off"
+            itemRenderer="renderers.DetailRenderer"
             dataProvider="{Groupon.getInstance().nearbyDeals}"
             touchInteractionEnd="list_touchInteractionEndHandler(event)">
         <s:layout>
             <s:HorizontalLayout gap="0" variableColumnWidth="false" columnWidth="{list.width}" verticalAlign="contentJustify" />
         </s:layout>
-        
-        <s:itemRenderer>
-            <fx:Component>
-                <s:Group implements="mx.core.IDataRenderer" width="100%" height="100%" preinitialize="preinit(event)">
-                    <fx:Script>
-                        <![CDATA[
-                            import mx.events.FlexEvent;
-                            
-                            import spark.components.supportClasses.StyleableTextField;
-                            import spark.core.ContentCache;
-                            
-                            import utils.DeviceInfo;
-                            
-                            [Bindable]
-                            static protected var contentCache:ContentCache = new ContentCache();
-                            
-                            private var _data:Object;
-                            
-                            [Bindable]
-                            public function get data():Object
-                            {
-                                return _data;
-                            }
-                            
-                            public function set data(value:Object):void
-                            {
-                                if (value == _data)
-                                    return;
-                                
-                                _data = value;
-                                
-                                // Set the htmlText for the text display
-                                if (_data)
-                                {
-                                    var stf:StyleableTextField = pitch.textDisplay as StyleableTextField;
-                                    
-                                    // Sometimes the bullets get "stuck" in the default text format.
-                                    // Work around that by clearing them here.
-                                    var format:TextFormat = stf.defaultTextFormat;
-                                    format.bullet = null;
-                                    stf.defaultTextFormat = format;
-                                    stf.htmlText = cleanupHtml(data.pitchHtml);
-                                    
-                                    // Force a text re-measure. Forcing the width to 300 temporarily
-                                    // ensures that the html text is correctly formatted and measured
-                                    // when the pitch components size is validated.
-                                    stf.width = 300; 
-                                    pitch.skin.invalidateSize();
-                               }
-                                
-                                // Reset our scroll position to the top
-                                scroller.viewport.verticalScrollPosition = 0;
-                            }
-                            
-                            private function cleanupHtml(htmlText:String):String
-                            {
-                                // Flash does not like unterminated <li> tags, or <li>
-                                // tags with a <p> tag inside. This is an attempt to clean
-                                // up some of those situations.
-                                var cleanHtml:String = htmlText.replace(/<p><\/li>/g, "</li>");
-                                return cleanHtml;
-                            }
-                            
-                            protected function preinit(event:FlexEvent):void
-                            {
-                                currentState = DeviceInfo.isTablet ? "tablet" : "phone";
-                            }
-                            
-                            private function discuss_clickHandler():void
-                            {
-                                dispatchEvent(new Event(DetailView.DISCUSSION_CLICKED, true));
-                            }                            
-                        ]]>
-                    </fx:Script>
-                    
-                    <s:states>
-                        <s:State name="tablet" />
-                        <s:State name="phone" />
-                    </s:states>
-                    <s:Scroller id="scroller" width="100%" height="100%" horizontalScrollPolicy="off" touchDelay="0">
-                        <s:VGroup width="100%" gap="0" opaqueBackground="0xFFFFFF">
-                            <s:Group width="100%" cacheAsBitmap="true" opaqueBackground="0xFFFFFF">
-                                <s:Rect width="100%" height="100%">
-                                    <s:fill>
-                                        <s:LinearGradient rotation="90">
-                                            <s:GradientEntry color="#41aed7" ratio="0"/>
-                                            <s:GradientEntry color="#277793" ratio="1"/>
-                                        </s:LinearGradient>
-                                    </s:fill>
-                                </s:Rect>
-                                <s:Line left="0" top="0" bottom="0">
-                                    <s:stroke>
-                                        <s:SolidColorStroke color="0xFFFFFF" alpha="0.2" />
-                                    </s:stroke>
-                               </s:Line>
-                                <s:Line right="0" top="0" bottom="0">
-                                    <s:stroke>
-                                        <s:SolidColorStroke color="0" alpha="0.2" />
-                                    </s:stroke>
-                                </s:Line>
-                                <s:Label text="{data.title}" styleName="detailShadow" left="15" right="15" top="16" bottom="40" />
-                                <s:Label text="{data.title}" styleName="detailTitle" left="15" right="15" top="15" bottom="41" />
-                                <s:Label text="{data.soldQuantity} bought so far" styleName="detailBarShadow" left="15" right="15" bottom="14"/>				
-                                <s:Label text="{data.soldQuantity} bought so far" styleName="detailBar" left="15" right="15" bottom="15"/>				
-                                <s:Button includeIn="phone" right="5" bottom="7" label="Discuss" styleName="smallButtonGreen" height="30" minHeight="30" click="discuss_clickHandler()"/>
-                                <s:CalloutButton includeIn="tablet" id="calloutButton" right="5" bottom="7" label="Discuss"
-                                                 styleName="smallButtonGreen" height="30" minHeight="30" verticalPosition="after">
-                                    <s:ViewNavigator firstView="views.DiscussionView" firstViewData="{data.id}" width="500" height="500" />
-                                </s:CalloutButton>
-                            </s:Group>
-                            <s:Group width="100%">
-                                <s:VGroup id="detailGroup" width="100%" minWidth="0" gap="15" paddingLeft="15" paddingTop="15" paddingRight="15" paddingBottom="15" horizontalAlign="center">
-                                    <s:Image source="{data.largeImageUrl}" contentLoader="{contentCache}" 
-                                             width="{Math.min(pitch.width, 440)}" 
-                                             height="{Math.min(pitch.width, 440) * 267 / 440}" 
-                                             enableLoadingState="true"/>
-                                    <s:TextArea id="pitch" width="100%" editable="false" selectable="false" paddingLeft="0" paddingTop="0" paddingRight="0" paddingBottom="0"
-                                                borderVisible="false" contentBackgroundColor="0xFFFFFF"
-                                                skinClass="spark.skins.mobile.TextAreaSkin" cacheAsBitmap="true" opaqueBackground="0xFFFFFF"/>				
-                                </s:VGroup>  
-                                <s:Line top="0" bottom="0" right="0">
-                                    <s:stroke>
-                                        <s:SolidColorStroke color="0" alpha="0.1" />
-                                    </s:stroke>
-                                </s:Line>
-                            </s:Group>
-                        </s:VGroup>
-                    </s:Scroller>
-                </s:Group>
-            </fx:Component>
-        </s:itemRenderer>
     </s:List>
     
     <!-- Busy indicator -->

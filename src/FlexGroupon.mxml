@@ -6,11 +6,6 @@
 			   resize="resizeHandler(event)"
 			   splashScreenImage="FlouponSplashScreen">
  	<fx:Style source="assets/styles.css"/>
-    
-    <!-- TODO:
-        - Skin for calloutButton on Android
-        - Add multi-dpi splash screen
-    -->
     <fx:Script>
         <![CDATA[           
             import flash.profiler.showRedrawRegions;

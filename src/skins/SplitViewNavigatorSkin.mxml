@@ -2,7 +2,7 @@
 <s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" 
         xmlns:s="library://ns.adobe.com/flex/spark">
     <fx:Declarations>
-        <s:SkinnablePopUpContainer id="viewNavigatorPopUp" height="{height}" skinClass="skins.MasterNavigatorPopUpSkin" />
+        <s:SkinnablePopUpContainer id="viewNavigatorPopUp" height="{height}" width="401" skinClass="skins.MasterNavigatorPopUpSkin" />
     </fx:Declarations>
     
     <s:states>
